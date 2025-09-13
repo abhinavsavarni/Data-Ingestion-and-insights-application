@@ -11,6 +11,7 @@ import admin from "./firebaseAdmin.js";
 import { webhookHandlers } from './webhookHandlers.js';
 import { webhookVerificationMiddleware } from './webhookVerification.js';
 import { getTenantIdByShop } from './helpers.js';
+import './setup.js'; // Run database setup
 
 dotenv.config();
 
@@ -473,9 +474,38 @@ app.post('/api/unregister-webhooks', async (req, res) => {
   }
 });
 
+// Simple test endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Shopify Data Ingestion App is running!', 
+    timestamp: new Date().toISOString(),
+    environment: config.server.nodeEnv
+  });
+});
+
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    
+    res.json({ 
+      status: 'OK', 
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      environment: config.server.nodeEnv
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ 
+      status: 'ERROR', 
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      environment: config.server.nodeEnv
+    });
+  }
 });
 
 // Serve static files in production
@@ -487,8 +517,10 @@ if (config.server.nodeEnv === 'production') {
 }
 
 const PORT = config.server.port;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
+
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server running on ${HOST}:${PORT}`);
   console.log(`🌍 Environment: ${config.server.nodeEnv}`);
   console.log(`🔗 Webhook base URL: ${config.webhooks.baseUrl}`);
 });
