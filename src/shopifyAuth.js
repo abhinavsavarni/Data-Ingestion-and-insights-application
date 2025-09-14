@@ -5,7 +5,7 @@ dotenv.config();
 
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
-const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.APP_URL || 'https://ravishing-determination-production.up.railway.app/';
 
 // Step 1: Redirect to Shopify OAuth
 export function getShopifyAuthUrl(shop) {
