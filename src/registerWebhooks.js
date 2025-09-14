@@ -37,6 +37,22 @@ const webhookConfigs = [
   }
 ];
 
+// Validate webhook URLs
+function validateWebhookUrls() {
+  if (!config.webhooks.baseUrl) {
+    throw new Error('Webhook base URL is not configured');
+  }
+  
+  if (!config.webhooks.baseUrl.startsWith('https://')) {
+    throw new Error(`Webhook base URL must use HTTPS: ${config.webhooks.baseUrl}`);
+  }
+  
+  console.log(`✅ Webhook base URL validated: ${config.webhooks.baseUrl}`);
+}
+
+// Validate on module load
+validateWebhookUrls();
+
 export async function registerWebhooks(shop) {
   const client = await pool.connect();
   let accessToken;
@@ -52,8 +68,11 @@ export async function registerWebhooks(shop) {
   }
 
   console.log(`🔗 Registering webhooks for ${shop}...`);
+  console.log(`📍 Webhook base URL: ${config.webhooks.baseUrl}`);
 
   for (const webhookConfig of webhookConfigs) {
+    console.log(`🎯 Attempting to register: ${webhookConfig.topic} → ${webhookConfig.address}`);
+    
     try {
       // First, check if webhook already exists
       const existingWebhooks = await axios.get(
@@ -79,7 +98,7 @@ export async function registerWebhooks(shop) {
       }
 
       // Create new webhook
-      await axios.post(`https://${shop}/admin/api/2023-07/webhooks.json`, {
+      const response = await axios.post(`https://${shop}/admin/api/2023-07/webhooks.json`, {
         webhook: {
           topic: webhookConfig.topic,
           address: webhookConfig.address,
@@ -92,9 +111,13 @@ export async function registerWebhooks(shop) {
         }
       });
 
-      console.log(`✅ Registered webhook: ${webhookConfig.topic}`);
+      console.log(`✅ Registered webhook: ${webhookConfig.topic} → ${webhookConfig.address}`);
     } catch (error) {
-      console.error(`❌ Failed to register webhook ${webhookConfig.topic}:`, error.response?.data || error.message);
+      console.error(`❌ Failed to register webhook ${webhookConfig.topic}:`, {
+        url: webhookConfig.address,
+        error: error.response?.data || error.message,
+        status: error.response?.status
+      });
     }
   }
 

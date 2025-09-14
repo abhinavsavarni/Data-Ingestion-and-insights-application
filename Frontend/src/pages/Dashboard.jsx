@@ -1,5 +1,18 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Box, Typography, Grid, Paper, TextField, MenuItem, Stack, Chip, Divider, Button } from "@mui/material";
+import { 
+  Box, 
+  Typography, 
+  Grid, 
+  Paper, 
+  TextField, 
+  MenuItem, 
+  Stack, 
+  Chip, 
+  Divider, 
+  Button,
+  Tabs,
+  Tab
+} from "@mui/material";
 import axios from "axios";
 import {
   ResponsiveContainer,
@@ -19,6 +32,7 @@ import {
   Cell,
 } from "recharts";
 import StoreSelector from "../components/StoreSelector";
+import TestDashboard from "../components/TestDashboard";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#00C49F"]; 
 
@@ -39,6 +53,7 @@ function Dashboard({ user, token }) {
   const [showStoreSelector, setShowStoreSelector] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [currentTab, setCurrentTab] = useState(0);
 
   const handleStoreSelect = (store) => {
     console.log("Store selected:", store);
@@ -155,6 +170,18 @@ function Dashboard({ user, token }) {
     );
   }
 
+  const handleTabChange = (event, newValue) => {
+    setCurrentTab(newValue);
+  };
+
+  const TabPanel = ({ children, value, index }) => {
+    return (
+      <div hidden={value !== index}>
+        {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+      </div>
+    );
+  };
+
   return (
     <Box>
       <Box
@@ -178,6 +205,18 @@ function Dashboard({ user, token }) {
           <Typography color="warning.contrastText">{error}</Typography>
         </Box>
       )}
+
+      {/* Tab Navigation */}
+      <Paper elevation={1} sx={{ mb: 3 }}>
+        <Tabs value={currentTab} onChange={handleTabChange}>
+          <Tab label="Analytics Dashboard" />
+          <Tab label="Manual Data Ingestion" />
+        </Tabs>
+      </Paper>
+
+      {/* Tab Panels */}
+      <TabPanel value={currentTab} index={0}>
+        {/* Analytics Dashboard Content */}
 
       {/* Filters */}
       <Paper elevation={1} sx={{ p: 2, mb: 3 }}>
@@ -433,6 +472,12 @@ function Dashboard({ user, token }) {
           </Paper>
         </Grid>
       </Grid>
+      </TabPanel>
+
+      <TabPanel value={currentTab} index={1}>
+        {/* Manual Data Ingestion */}
+        <TestDashboard user={user} token={token} />
+      </TabPanel>
     </Box>
   );
 }

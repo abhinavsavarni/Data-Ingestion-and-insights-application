@@ -48,7 +48,10 @@ const config = {
 
   // Webhooks
   webhooks: {
-    baseUrl: process.env.WEBHOOK_BASE_URL || process.env.RAILWAY_PUBLIC_DOMAIN,
+    baseUrl: process.env.WEBHOOK_BASE_URL || 
+             process.env.RAILWAY_PUBLIC_DOMAIN || 
+             process.env.APP_URL ||
+             'https://ravishing-determination-production.up.railway.app',
     events: [
       'orders/create',
       'orders/updated', 
