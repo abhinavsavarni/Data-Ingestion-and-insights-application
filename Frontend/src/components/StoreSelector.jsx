@@ -16,9 +16,8 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Store as StoreIcon } from '@mui/icons-material';
 import axios from 'axios';
-import { auth } from '../firebase';
 
-function StoreSelector({ onStoreSelect, selectedStore }) {
+function StoreSelector({ onStoreSelect, selectedStore, token }) {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,15 +27,14 @@ function StoreSelector({ onStoreSelect, selectedStore }) {
   console.log('StoreSelector component initialized');
 
   useEffect(() => {
-    fetchStores();
-  }, []);
+    if (token) {
+      fetchStores();
+    }
+  }, [token]);
 
   const fetchStores = async () => {
     try {
-      console.log('Fetching stores...');
-      // Temporary: use test token for debugging
-      const token = "test-token"; // await auth.currentUser.getIdToken();
-      console.log('Using test token for stores API');
+      console.log('Fetching stores with Firebase token...');
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/stores`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -55,7 +53,7 @@ function StoreSelector({ onStoreSelect, selectedStore }) {
     if (!newStoreDomain) return;
     
     try {
-      const token = await auth.currentUser.getIdToken();
+      console.log('Connecting store with Firebase token...');
       await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/connect-store`, 
         { shop: newStoreDomain },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -64,14 +62,14 @@ function StoreSelector({ onStoreSelect, selectedStore }) {
       setNewStoreDomain('');
       fetchStores();
     } catch (err) {
-      console.error('Error connecting store:', err);
+      console.error('Error connecting store:', err.response?.data || err.message);
       setError('Failed to connect store');
     }
   };
 
   const handleShopifyOAuth = (storeDomain) => {
-    const firebaseUid = auth.currentUser.uid;
-    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${storeDomain}&firebase_uid=${firebaseUid}`;
+    // Firebase UID is linked on backend via token validation
+    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${storeDomain}`;
     window.open(oauthUrl, '_blank', 'width=600,height=600');
   };
 

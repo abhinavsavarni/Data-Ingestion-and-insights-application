@@ -2,14 +2,20 @@ import React from 'react';
 import { ThemeProvider, CssBaseline, Container, Box, Typography } from '@mui/material';
 import theme from './theme';
 import Dashboard from './pages/Dashboard';
-import TestDashboard from './components/TestDashboard';
 import Auth from './pages/Auth';
 import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
   const [user, setUser] = React.useState(null);
+  const [token, setToken] = React.useState(null);
 
-  console.log('App render - user:', user);
+  console.log('App render - user:', user, 'token:', token ? '[set]' : '[null]');
+
+  // Handle login from Auth.jsx
+  const handleLogin = (user, token) => {
+    setUser(user);
+    setToken(token);
+  };
 
   return (
     <ErrorBoundary>
@@ -20,7 +26,11 @@ function App() {
             <Typography variant="h3" align="center" gutterBottom>
               Shopify Data Dashboard
             </Typography>
-            {user ? <Dashboard user={user} /> : <Auth onLogin={setUser} />}
+            {user ? (
+              <Dashboard user={user} token={token} />
+            ) : (
+              <Auth onLogin={handleLogin} />
+            )}
           </Box>
         </Container>
       </ThemeProvider>

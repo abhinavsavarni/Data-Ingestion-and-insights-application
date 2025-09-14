@@ -12,25 +12,34 @@ function Auth({ onLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleAuth = async () => {
-    console.log('Auth attempt - isSignup:', isSignup, 'email:', email);
-    setLoading(true);
-    try {
-      let userCredential;
-      if (isSignup) {
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        userCredential = await signInWithEmailAndPassword(auth, email, password);
-      }
-      console.log('Auth successful, user:', userCredential.user);
-      onLogin(userCredential.user); // Pass user back to App.jsx
-    } catch (err) {
-      console.error("Auth error:", err.message);
-      alert(err.message);
-    } finally {
-      setLoading(false);
+ const handleAuth = async () => {
+  console.log('Auth attempt - isSignup:', isSignup, 'email:', email);
+  setLoading(true);
+  try {
+    let userCredential;
+    if (isSignup) {
+      userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    } else {
+      userCredential = await signInWithEmailAndPassword(auth, email, password);
     }
-  };
+
+    const user = userCredential.user;
+    console.log('Auth successful, user:', user);
+
+    // ✅ Fetch ID token
+    const token = await user.getIdToken();
+    console.log('Got Firebase token:', token);
+
+    // Pass both user and token back to App.jsx
+    onLogin(user, token);
+
+  } catch (err) {
+    console.error("Auth error:", err.message);
+    alert(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const isEmailValid = /.+@.+\..+/.test(email);
   const isPasswordValid = password.length >= 6;
