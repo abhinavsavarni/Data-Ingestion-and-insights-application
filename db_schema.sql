@@ -3,7 +3,18 @@ CREATE TABLE tenants (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   shopify_domain VARCHAR(255) UNIQUE NOT NULL,
-  shopify_access_token VARCHAR(255)
+  shopify_access_token VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- User stores table (for multi-tenant support)
+CREATE TABLE user_stores (
+  id SERIAL PRIMARY KEY,
+  firebase_uid VARCHAR(255) NOT NULL,
+  tenant_id INTEGER REFERENCES tenants(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (firebase_uid, tenant_id)
 );
 
 -- Customers table

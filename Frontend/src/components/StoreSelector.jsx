@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Store as StoreIcon } from '@mui/icons-material';
 import axios from 'axios';
+import { getAuth } from 'firebase/auth';
 
 function StoreSelector({ onStoreSelect, selectedStore, token }) {
   const [stores, setStores] = useState([]);
@@ -68,8 +69,16 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
   };
 
   const handleShopifyOAuth = (storeDomain) => {
-    // Firebase UID is linked on backend via token validation
-    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${storeDomain}`;
+    // Get Firebase UID and pass it to OAuth flow
+    const auth = getAuth();
+    const firebaseUid = auth.currentUser?.uid;
+    
+    if (!firebaseUid) {
+      setError('User not authenticated. Please refresh and try again.');
+      return;
+    }
+    
+    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${storeDomain}&firebase_uid=${firebaseUid}`;
     window.open(oauthUrl, '_blank', 'width=600,height=600');
   };
 

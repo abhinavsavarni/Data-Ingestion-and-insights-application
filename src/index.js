@@ -187,17 +187,6 @@ app.post('/webhook/carts', async (req, res) => {
   res.status(200).send('Cart webhook received');
 });
 
-if (config.server.nodeEnv === 'production') {
-  app.use(express.static('dist'));
-  app.get('*', (req, res) => {
-    res.sendFile('dist/index.html', { root: '.' });
-  });
-}
-// Health check / root endpoint
-/*app.get('/', (req, res) => {
-  res.send('Shopify Data Ingestion App Backend');
-});*/
-
 // Shopify OAuth Step 1: Redirect to Shopify (with Firebase UID)
 app.get('/shopify/auth', (req, res) => {
   const { shop, firebase_uid } = req.query;
@@ -212,13 +201,27 @@ app.get('/shopify/auth', (req, res) => {
 // Shopify OAuth Step 2: Callback and token exchange
 app.get('/shopify/callback', async (req, res) => {
   const { shop, code, state } = req.query;
-  if (!shop || !code) return res.status(400).send('Missing shop or code');
-  if (!state) return res.status(400).send('Missing Firebase UID');
+  console.log('OAuth callback received:', { shop, code: code ? 'present' : 'missing', state });
+  
+  if (!shop || !code) {
+    console.error('Missing shop or code in OAuth callback');
+    return res.status(400).send('Missing shop or code');
+  }
+  if (!state) {
+    console.error('Missing Firebase UID in OAuth callback');
+    return res.status(400).send('Missing Firebase UID');
+  }
   
   try {
+    console.log('Exchanging code for access token for shop:', shop);
     const accessToken = await exchangeCodeForToken(shop, code);
+    console.log('Access token received, storing tenant...');
+    
     await storeTenant(shop, accessToken);
+    console.log('Tenant stored, linking to user:', state);
+    
     await linkStoreToUser(state, shop);
+    console.log('User-store link created successfully');
     
     // Register webhooks for real-time data sync
     try {
@@ -229,9 +232,34 @@ app.get('/shopify/callback', async (req, res) => {
       // Don't fail the entire flow if webhooks fail
     }
     
-    res.send(`Shop ${shop} connected successfully! Webhooks registered for real-time data sync. You can now close this window and return to the dashboard.`);
+    res.send(`
+      <html>
+        <head><title>Store Connected</title></head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1>✅ Success!</h1>
+          <p>Shop <strong>${shop}</strong> connected successfully!</p>
+          <p>Webhooks registered for real-time data sync.</p>
+          <p>You can now close this window and return to the dashboard.</p>
+          <script>
+            // Auto-close after 3 seconds
+            setTimeout(() => window.close(), 3000);
+          </script>
+        </body>
+      </html>
+    `);
   } catch (err) {
-    res.status(500).send('OAuth error: ' + err.message);
+    console.error('OAuth error:', err);
+    res.status(500).send(`
+      <html>
+        <head><title>Connection Error</title></head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1>❌ Error</h1>
+          <p>OAuth error: ${err.message}</p>
+          <p>Please try again or contact support if the issue persists.</p>
+          <button onclick="window.close()">Close Window</button>
+        </body>
+      </html>
+    `);
   }
 });
 
@@ -375,30 +403,46 @@ app.get("/api/shop", verifyToken, async (req, res) => {
 // Connect a new store
 app.post("/api/connect-store", verifyToken, async (req, res) => {
   const { shop } = req.body;
-  if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
+  console.log('Connect store request:', { shop, userId: req.user.uid });
+  
+  if (!shop) {
+    console.error('Missing shop parameter in connect-store request');
+    return res.status(400).json({ error: "Missing shop parameter" });
+  }
   
   try {
     // Check if store already exists
     const client = await pool.connect();
     try {
+      console.log('Checking if store exists in tenants table:', shop);
       const existingStore = await client.query(
         "SELECT id FROM tenants WHERE shopify_domain = $1",
         [shop]
       );
       
       if (existingStore.rows.length === 0) {
-        return res.status(404).json({ error: "Store not found. Please connect via Shopify OAuth first." });
+        console.error('Store not found in tenants table:', shop);
+        return res.status(404).json({ 
+          error: "Store not found. Please connect via Shopify OAuth first.",
+          details: "The store must complete the OAuth flow before it can be connected to your account."
+        });
       }
       
+      console.log('Store found, linking to user:', req.user.uid);
       // Link user to existing store
       await linkStoreToUser(req.user.uid, shop);
+      console.log('Store connected successfully to user');
+      
       res.json({ message: "Store connected successfully" });
     } finally {
       client.release();
     }
   } catch (err) {
     console.error("Error connecting store:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ 
+      error: "Internal server error",
+      details: err.message 
+    });
   }
 });
 
@@ -512,6 +556,16 @@ app.get('/health', async (req, res) => {
     });
   }
 });
+
+// IMPORTANT: Static file serving MUST be last to avoid intercepting API routes
+if (config.server.nodeEnv === 'production') {
+  app.use(express.static('dist'));
+  
+  // Catch-all handler: send back React's index.html file for non-API routes
+  app.get('*', (req, res) => {
+    res.sendFile('dist/index.html', { root: '.' });
+  });
+}
 
 
 
