@@ -523,8 +523,8 @@ app.post('/api/unregister-webhooks', async (req, res) => {
   }
 });
 
-// Simple test endpoint
-app.get('/', (req, res) => {
+// Simple test endpoint - only for API testing
+app.get('/api/status', (req, res) => {
   res.json({ 
     message: 'Shopify Data Ingestion App is running!', 
     timestamp: new Date().toISOString(),
@@ -557,13 +557,23 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// IMPORTANT: Static file serving MUST be last to avoid intercepting API routes
+// IMPORTANT: Static file serving and frontend routes MUST be last
 if (config.server.nodeEnv === 'production') {
+  // Serve static files
   app.use(express.static('dist'));
   
-  // Catch-all handler: send back React's index.html file for non-API routes
+  // Catch-all handler: send back React's index.html file for any non-API routes
   app.get('*', (req, res) => {
     res.sendFile('dist/index.html', { root: '.' });
+  });
+} else {
+  // Development mode - serve a simple message for root
+  app.get('/', (req, res) => {
+    res.json({ 
+      message: 'Shopify Data Ingestion App - Development Mode', 
+      timestamp: new Date().toISOString(),
+      environment: config.server.nodeEnv
+    });
   });
 }
 
