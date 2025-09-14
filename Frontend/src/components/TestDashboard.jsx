@@ -24,6 +24,31 @@ function TestDashboard({ user, token }) {
   const [shopDomain, setShopDomain] = useState('');
   const [error, setError] = useState('');
 
+  const handleWebhookAction = async (action) => {
+    if (!shopDomain) {
+      setError('Please enter a shop domain (e.g., your-store.myshopify.com)');
+      return;
+    }
+
+    setLoading({ ...loading, [action]: true });
+    setError('');
+    
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/${action}-webhooks`,
+        { shop: shopDomain },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setResults({ ...results, [action]: `✅ ${response.data.message}` });
+    } catch (err) {
+      console.error(`Error ${action} webhooks:`, err);
+      setResults({ ...results, [action]: `❌ Error: ${err.response?.data?.error || err.message}` });
+    } finally {
+      setLoading({ ...loading, [action]: false });
+    }
+  };
+
   const handleIngest = async (type) => {
     if (!shopDomain) {
       setError('Please enter a shop domain (e.g., your-store.myshopify.com)');
@@ -186,14 +211,70 @@ function TestDashboard({ user, token }) {
         </Grid>
       </Grid>
 
+      {/* Webhook Management Section */}
       <Card sx={{ mt: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Next Steps: Set Up Webhooks
+            Webhook Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Register or unregister webhooks for real-time data sync from your Shopify store.
+          </Typography>
+          
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={loading.register ? <CircularProgress size={20} /> : <DownloadIcon />}
+                disabled={loading.register}
+                onClick={() => handleWebhookAction('register')}
+                fullWidth
+                sx={{ mb: 1 }}
+              >
+                {loading.register ? 'Registering...' : 'Register Webhooks'}
+              </Button>
+              {results.register && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {results.register}
+                </Typography>
+              )}
+            </Grid>
+            
+            <Grid item xs={12} sm={6}>
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={loading.unregister ? <CircularProgress size={20} /> : <DownloadIcon />}
+                disabled={loading.unregister}
+                onClick={() => handleWebhookAction('unregister')}
+                fullWidth
+                sx={{ mb: 1 }}
+              >
+                {loading.unregister ? 'Unregistering...' : 'Unregister Webhooks'}
+              </Button>
+              {results.unregister && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {results.unregister}
+                </Typography>
+              )}
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Setup Complete!
           </Typography>
           <Typography variant="body2" paragraph>
-            After testing manual ingestion, you'll want to set up webhooks for real-time data sync.
-            This requires configuring webhook URLs in your Shopify app settings.
+            ✅ **For existing stores:** Use "Register Webhooks" button above<br/>
+            ✅ **For new stores:** Webhooks auto-register during OAuth connection<br/>
+            ✅ **Manual data pull:** Use the ingestion buttons to get historical data
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            After webhook registration, your app will receive real-time updates when customers, orders, or products change in your Shopify store.
           </Typography>
         </CardContent>
       </Card>
