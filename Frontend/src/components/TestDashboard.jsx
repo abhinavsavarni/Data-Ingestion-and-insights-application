@@ -150,29 +150,65 @@ function TestDashboard({ user, token }) {
             >
               {storeStatus.error ? (
                 <div>
-                  <strong>Error:</strong> {storeStatus.error}
+                  <strong>Issue Found:</strong> {storeStatus.error}
+                  
+                  {storeStatus.needs_oauth && (
+                    <Box sx={{ mt: 2 }}>
+                      <Button 
+                        variant="contained" 
+                        color="primary"
+                        onClick={() => {
+                          const auth = getAuth();
+                          const firebaseUid = auth.currentUser?.uid;
+                          if (!firebaseUid) {
+                            setError('User not authenticated. Please refresh and try again.');
+                            return;
+                          }
+                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${firebaseUid}`;
+                          window.open(oauthUrl, '_blank', 'width=600,height=600');
+                        }}
+                      >
+                        Connect Store via OAuth
+                      </Button>
+                    </Box>
+                  )}
                 </div>
               ) : (
                 <div>
                   <strong>✅ Store Found:</strong> {storeStatus.name}<br/>
                   <strong>Domain:</strong> {storeStatus.shopify_domain}<br/>
                   <strong>Access Token:</strong> {storeStatus.has_access_token ? '✅ Present' : '❌ Missing'}<br/>
-                  <strong>Connected:</strong> {new Date(storeStatus.created_at).toLocaleDateString()}
+                  <strong>Linked to User:</strong> {storeStatus.linked_to_user ? '✅ Yes' : '❌ No'}<br/>
+                  <strong>Created:</strong> {new Date(storeStatus.created_at).toLocaleDateString()}
+                  {storeStatus.linked_at && (
+                    <><br/><strong>Linked:</strong> {new Date(storeStatus.linked_at).toLocaleDateString()}</>
+                  )}
                   
-                  {!storeStatus.has_access_token && (
+                  {(storeStatus.needs_oauth || storeStatus.needs_linking) && (
                     <Box sx={{ mt: 2 }}>
                       <Alert severity="warning" sx={{ mb: 1 }}>
-                        ⚠️ This store is missing an access token. You need to reconnect it.
+                        {storeStatus.needs_oauth && storeStatus.needs_linking 
+                          ? '⚠️ This store needs to be reconnected and linked to your account.'
+                          : storeStatus.needs_oauth 
+                          ? '⚠️ This store is missing an access token. You need to reconnect it.'
+                          : '⚠️ This store exists but is not linked to your account.'
+                        }
                       </Alert>
                       <Button 
                         variant="contained" 
                         color="primary"
                         onClick={() => {
-                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${user?.uid}`;
+                          const auth = getAuth();
+                          const firebaseUid = auth.currentUser?.uid;
+                          if (!firebaseUid) {
+                            setError('User not authenticated. Please refresh and try again.');
+                            return;
+                          }
+                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${firebaseUid}`;
                           window.open(oauthUrl, '_blank', 'width=600,height=600');
                         }}
                       >
-                        Reconnect Store
+                        {storeStatus.needs_oauth ? 'Reconnect Store' : 'Link Store to Account'}
                       </Button>
                     </Box>
                   )}

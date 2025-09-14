@@ -407,27 +407,43 @@ app.get("/api/store-status", verifyToken, async (req, res) => {
   
   const client = await pool.connect();
   try {
-    // Check if user has access to this store
-    const accessCheck = await client.query(`
-      SELECT t.id, t.name, t.shopify_domain, t.shopify_access_token, t.created_at
-      FROM user_stores us
-      JOIN tenants t ON us.tenant_id = t.id
-      WHERE us.firebase_uid = $1 AND t.shopify_domain = $2
-    `, [req.user.uid, shop]);
+    // First check if store exists in tenants table at all
+    const tenantCheck = await client.query(
+      'SELECT id, name, shopify_domain, shopify_access_token, created_at FROM tenants WHERE shopify_domain = $1',
+      [shop]
+    );
     
-    if (accessCheck.rows.length === 0) {
-      return res.status(404).json({ error: "Store not found or access denied" });
+    if (tenantCheck.rows.length === 0) {
+      return res.json({
+        error: "Store not found in system. Please connect this store via OAuth first.",
+        exists_in_system: false,
+        needs_oauth: true
+      });
     }
     
-    const store = accessCheck.rows[0];
+    const tenant = tenantCheck.rows[0];
+    
+    // Check if user has access to this store
+    const accessCheck = await client.query(`
+      SELECT us.created_at as linked_at
+      FROM user_stores us
+      WHERE us.firebase_uid = $1 AND us.tenant_id = $2
+    `, [req.user.uid, tenant.id]);
+    
+    const isLinkedToUser = accessCheck.rows.length > 0;
     
     res.json({
-      id: store.id,
-      name: store.name,
-      shopify_domain: store.shopify_domain,
-      has_access_token: !!store.shopify_access_token,
-      access_token_length: store.shopify_access_token ? store.shopify_access_token.length : 0,
-      created_at: store.created_at
+      id: tenant.id,
+      name: tenant.name,
+      shopify_domain: tenant.shopify_domain,
+      has_access_token: !!tenant.shopify_access_token,
+      access_token_length: tenant.shopify_access_token ? tenant.shopify_access_token.length : 0,
+      created_at: tenant.created_at,
+      exists_in_system: true,
+      linked_to_user: isLinkedToUser,
+      linked_at: isLinkedToUser ? accessCheck.rows[0].linked_at : null,
+      needs_oauth: !tenant.shopify_access_token,
+      needs_linking: !isLinkedToUser
     });
   } catch (err) {
     console.error("Error checking store status:", err);
@@ -476,6 +492,46 @@ app.post("/api/connect-store", verifyToken, async (req, res) => {
     }
   } catch (err) {
     console.error("Error connecting store:", err);
+    res.status(500).json({ 
+      error: "Internal server error",
+      details: err.message 
+    });
+  }
+});
+
+// Link existing store to current user
+app.post("/api/link-store", verifyToken, async (req, res) => {
+  const { shop } = req.body;
+  console.log('Link store request:', { shop, userId: req.user.uid });
+  
+  if (!shop) {
+    return res.status(400).json({ error: "Missing shop parameter" });
+  }
+  
+  try {
+    const client = await pool.connect();
+    try {
+      // Check if store exists
+      const storeCheck = await client.query(
+        "SELECT id FROM tenants WHERE shopify_domain = $1",
+        [shop]
+      );
+      
+      if (storeCheck.rows.length === 0) {
+        return res.status(404).json({ 
+          error: "Store not found in system"
+        });
+      }
+      
+      // Link user to store
+      await linkStoreToUser(req.user.uid, shop);
+      
+      res.json({ message: "Store linked to your account successfully" });
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error("Error linking store:", err);
     res.status(500).json({ 
       error: "Internal server error",
       details: err.message 
