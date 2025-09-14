@@ -26,6 +26,35 @@ function TestDashboard({ user, token }) {
   const [error, setError] = useState('');
   const [storeStatus, setStoreStatus] = useState(null);
 
+  // Helper function to generate proper OAuth URL
+  const generateOAuthUrl = (shop) => {
+    const auth = getAuth();
+    const firebaseUid = auth.currentUser?.uid;
+    if (!firebaseUid) {
+      setError('User not authenticated. Please refresh and try again.');
+      return null;
+    }
+    
+    // Clean and encode URL parameters to avoid protocol violations
+    const cleanShopDomain = shop.trim().replace(/\s+/g, '');
+    const encodedShop = encodeURIComponent(cleanShopDomain);
+    const encodedUid = encodeURIComponent(firebaseUid);
+    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
+    
+    console.log('Generated OAuth URL:', oauthUrl);
+    console.log('Shop domain (cleaned):', cleanShopDomain);
+    console.log('Firebase UID:', firebaseUid);
+    
+    return oauthUrl;
+  };
+
+  const openOAuthWindow = (shop) => {
+    const oauthUrl = generateOAuthUrl(shop);
+    if (oauthUrl) {
+      window.open(oauthUrl, '_blank', 'width=600,height=600');
+    }
+  };
+
   const checkStoreStatus = async () => {
     if (!shopDomain) {
       setError('Please enter a shop domain');
@@ -128,9 +157,13 @@ function TestDashboard({ user, token }) {
             label="Shop Domain"
             placeholder="your-store.myshopify.com"
             value={shopDomain}
-            onChange={(e) => setShopDomain(e.target.value)}
+            onChange={(e) => {
+              // Remove extra spaces and normalize input
+              const value = e.target.value.replace(/\s+/g, '').toLowerCase();
+              setShopDomain(value);
+            }}
             sx={{ mb: 2 }}
-            helperText="Enter the Shopify domain of a connected store"
+            helperText="Enter the Shopify domain of a connected store (spaces will be automatically removed)"
           />
           
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -164,7 +197,11 @@ function TestDashboard({ user, token }) {
                             setError('User not authenticated. Please refresh and try again.');
                             return;
                           }
-                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${firebaseUid}`;
+                          // Properly encode URL parameters to avoid spaces
+                          const encodedShop = encodeURIComponent(shopDomain.trim());
+                          const encodedUid = encodeURIComponent(firebaseUid);
+                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
+                          console.log('Opening OAuth URL:', oauthUrl);
                           window.open(oauthUrl, '_blank', 'width=600,height=600');
                         }}
                       >
@@ -204,7 +241,11 @@ function TestDashboard({ user, token }) {
                             setError('User not authenticated. Please refresh and try again.');
                             return;
                           }
-                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${firebaseUid}`;
+                          // Properly encode URL parameters to avoid spaces
+                          const encodedShop = encodeURIComponent(shopDomain.trim());
+                          const encodedUid = encodeURIComponent(firebaseUid);
+                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
+                          console.log('Opening OAuth URL:', oauthUrl);
                           window.open(oauthUrl, '_blank', 'width=600,height=600');
                         }}
                       >

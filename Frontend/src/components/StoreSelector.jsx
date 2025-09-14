@@ -78,7 +78,11 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
       return;
     }
     
-    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${storeDomain}&firebase_uid=${firebaseUid}`;
+    // Properly encode URL parameters to avoid spaces and special characters
+    const encodedShop = encodeURIComponent(storeDomain.trim());
+    const encodedUid = encodeURIComponent(firebaseUid);
+    const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
+    console.log('Opening OAuth URL:', oauthUrl);
     window.open(oauthUrl, '_blank', 'width=600,height=600');
   };
 
@@ -180,7 +184,11 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
             label="Store Domain"
             placeholder="your-store.myshopify.com"
             value={newStoreDomain}
-            onChange={(e) => setNewStoreDomain(e.target.value)}
+            onChange={(e) => {
+              // Remove extra spaces and normalize input
+              const value = e.target.value.replace(/\s+/g, '').toLowerCase();
+              setNewStoreDomain(value);
+            }}
             sx={{ mb: 2 }}
           />
           <Typography variant="body2" color="text.secondary">
