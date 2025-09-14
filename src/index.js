@@ -187,11 +187,16 @@ app.post('/webhook/carts', async (req, res) => {
   res.status(200).send('Cart webhook received');
 });
 
-
+if (config.server.nodeEnv === 'production') {
+  app.use(express.static('dist'));
+  app.get('*', (req, res) => {
+    res.sendFile('dist/index.html', { root: '.' });
+  });
+}
 // Health check / root endpoint
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
   res.send('Shopify Data Ingestion App Backend');
-});
+});*/
 
 // Shopify OAuth Step 1: Redirect to Shopify (with Firebase UID)
 app.get('/shopify/auth', (req, res) => {
@@ -508,13 +513,8 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// Serve static files in production
-if (config.server.nodeEnv === 'production') {
-  app.use(express.static('dist'));
-  app.get('*', (req, res) => {
-    res.sendFile('dist/index.html', { root: '.' });
-  });
-}
+
+
 
 const PORT = config.server.port;
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
