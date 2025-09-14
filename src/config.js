@@ -27,7 +27,7 @@ const config = {
   // CORS
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? [process.env.FRONTEND_URL, 'https://your-app.railway.app'] 
+      ? [process.env.FRONTEND_URL, process.env.RAILWAY_PUBLIC_DOMAIN]
       : ['http://localhost:5173', 'http://localhost:3000']
   },
 
@@ -48,7 +48,7 @@ const config = {
 
   // Webhooks
   webhooks: {
-    baseUrl: process.env.WEBHOOK_BASE_URL || process.env.RAILWAY_PUBLIC_DOMAIN || 'https://your-app.railway.app',
+    baseUrl: process.env.WEBHOOK_BASE_URL || process.env.RAILWAY_PUBLIC_DOMAIN,
     events: [
       'orders/create',
       'orders/updated', 
