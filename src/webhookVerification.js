@@ -28,9 +28,7 @@ export function verifyWebhookSignature(body, signature, secret) {
   }
 }
 
-/**
- * Middleware to verify webhook requests
- */
+
 export function webhookVerificationMiddleware(req, res, next) {
   const signature = req.headers['x-shopify-hmac-sha256'];
   const webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET;

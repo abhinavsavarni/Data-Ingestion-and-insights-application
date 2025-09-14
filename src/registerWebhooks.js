@@ -37,7 +37,7 @@ const webhookConfigs = [
   }
 ];
 
-// Validate webhook URLs
+
 function validateWebhookUrls() {
   if (!config.webhooks.baseUrl) {
     throw new Error('Webhook base URL is not configured');
@@ -50,7 +50,7 @@ function validateWebhookUrls() {
   console.log(`✅ Webhook base URL validated: ${config.webhooks.baseUrl}`);
 }
 
-// Validate on module load
+
 validateWebhookUrls();
 
 export async function registerWebhooks(shop) {
@@ -85,7 +85,7 @@ export async function registerWebhooks(shop) {
     console.log(`🎯 Attempting to register: ${webhookConfig.topic} → ${webhookConfig.address}`);
     
     try {
-      // First, check if webhook already exists
+      
       const existingWebhooks = await axios.get(
         `https://${shop}/admin/api/2023-07/webhooks.json?topic=${webhookConfig.topic}`,
         {
@@ -96,7 +96,7 @@ export async function registerWebhooks(shop) {
         }
       );
 
-      // Delete existing webhooks for this topic
+      
       for (const webhook of existingWebhooks.data.webhooks) {
         if (webhook.address === webhookConfig.address) {
           await axios.delete(`https://${shop}/admin/api/2023-07/webhooks/${webhook.id}.json`, {
@@ -108,7 +108,7 @@ export async function registerWebhooks(shop) {
         }
       }
 
-      // Create new webhook
+      
       const response = await axios.post(`https://${shop}/admin/api/2023-07/webhooks.json`, {
         webhook: {
           topic: webhookConfig.topic,

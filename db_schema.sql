@@ -1,4 +1,4 @@
--- Tenants table
+
 CREATE TABLE tenants (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -8,7 +8,7 @@ CREATE TABLE tenants (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- User stores table (for multi-tenant support)
+
 CREATE TABLE user_stores (
   id SERIAL PRIMARY KEY,
   firebase_uid VARCHAR(255) NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE user_stores (
   UNIQUE (firebase_uid, tenant_id)
 );
 
--- Customers table
+
 CREATE TABLE customers (
   id SERIAL PRIMARY KEY,
   tenant_id INTEGER REFERENCES tenants(id),
@@ -30,7 +30,7 @@ CREATE TABLE customers (
   UNIQUE (tenant_id, shopify_customer_id)
 );
 
--- Products table
+
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
   tenant_id INTEGER REFERENCES tenants(id),
@@ -42,7 +42,7 @@ CREATE TABLE products (
   UNIQUE (tenant_id, shopify_product_id)
 );
 
--- Orders table
+
 CREATE TABLE orders (
   id SERIAL PRIMARY KEY,
   tenant_id INTEGER REFERENCES tenants(id),
@@ -54,7 +54,7 @@ CREATE TABLE orders (
   UNIQUE (tenant_id, shopify_order_id)
 );
 
--- Events table (bonus)
+
 CREATE TABLE events (
   id SERIAL PRIMARY KEY,
   tenant_id INTEGER REFERENCES tenants(id),

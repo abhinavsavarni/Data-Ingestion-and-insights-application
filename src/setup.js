@@ -6,11 +6,10 @@ async function setupDatabase() {
   console.log('🔧 Setting up database...');
   
   try {
-    // Read the schema file
+    
     const schemaPath = path.join(process.cwd(), 'db_schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
     
-    // Execute the schema
     const client = await pool.connect();
     try {
       await client.query(schema);
@@ -20,11 +19,11 @@ async function setupDatabase() {
     }
   } catch (error) {
     console.error('❌ Database setup failed:', error);
-    // Don't exit - let the app start anyway
+    
   }
 }
 
-// Only run setup in production
+
 if (process.env.NODE_ENV === 'production') {
   setupDatabase();
 }

@@ -1,4 +1,4 @@
-// Database connection setup
+
 import { Pool } from 'pg';
 import config from './config.js';
 

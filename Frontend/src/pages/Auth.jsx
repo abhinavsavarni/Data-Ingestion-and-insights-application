@@ -26,11 +26,11 @@ function Auth({ onLogin }) {
     const user = userCredential.user;
     console.log('Auth successful, user:', user);
 
-    // ✅ Fetch ID token
+    
     const token = await user.getIdToken();
     console.log('Got Firebase token:', token);
 
-    // Pass both user and token back to App.jsx
+    
     onLogin(user, token);
 
   } catch (err) {

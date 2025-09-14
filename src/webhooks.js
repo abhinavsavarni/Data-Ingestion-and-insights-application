@@ -1,6 +1,6 @@
 import pool from './db.js';
 
-// Handle Shopify webhook events
+
 export async function handleWebhookEvent(eventType, shop, payload) {
   const client = await pool.connect();
   try {

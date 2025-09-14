@@ -1,7 +1,7 @@
 import axios from 'axios';
 import pool from './db.js';
 
-// Helper to get access token for a tenant
+
 export async function getAccessToken(shop) {
   const client = await pool.connect();
   try {
@@ -29,7 +29,7 @@ export async function getAccessToken(shop) {
   }
 }
 
-// Ingest customers
+
 export async function ingestCustomers(shop) {
   const accessToken = await getAccessToken(shop);
   const url = `https://${shop}/admin/api/2023-07/customers.json`;
@@ -50,7 +50,7 @@ export async function ingestCustomers(shop) {
   }
 }
 
-// Ingest products
+
 export async function ingestProducts(shop) {
   const accessToken = await getAccessToken(shop);
   const url = `https://${shop}/admin/api/2023-07/products.json`;
@@ -71,10 +71,10 @@ export async function ingestProducts(shop) {
   }
 }
 
-// Parse Shopify Link header for next page URL
+
 function parseNextLink(linkHeader) {
   if (!linkHeader) return null;
-  // Example: <https://shop/admin/api/2023-07/orders.json?limit=250&page_info=xxxx>; rel="next"
+  
   const parts = linkHeader.split(',');
   for (const part of parts) {
     const section = part.split(';');
@@ -89,7 +89,7 @@ function parseNextLink(linkHeader) {
   return null;
 }
 
-// Ingest orders (with pagination, include all statuses)
+
 export async function ingestOrders(shop) {
   const accessToken = await getAccessToken(shop);
   let nextUrl = `https://${shop}/admin/api/2023-07/orders.json?status=any&limit=250`;
@@ -115,7 +115,7 @@ export async function ingestOrders(shop) {
   }
 }
 
-// Ingest custom events (bonus)
+
 export async function ingestEvents(shop, eventType, payload) {
   const client = await pool.connect();
   try {

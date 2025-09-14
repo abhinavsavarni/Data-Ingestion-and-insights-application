@@ -11,7 +11,7 @@ function App() {
 
   console.log('App render - user:', user, 'token:', token ? '[set]' : '[null]');
 
-  // Handle login from Auth.jsx
+ 
   const handleLogin = (user, token) => {
     setUser(user);
     setToken(token);

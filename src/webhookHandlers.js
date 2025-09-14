@@ -1,9 +1,9 @@
 import pool from './db.js';
 import { getTenantIdByShop } from './helpers.js';
 
-// Webhook event handlers
+
 export const webhookHandlers = {
-  // Order webhooks
+
   'orders/create': async (shop, data) => {
     console.log(`📦 Order created in ${shop}:`, data.id);
     await handleOrderWebhook(shop, data, 'create');
@@ -24,7 +24,7 @@ export const webhookHandlers = {
     await handleOrderWebhook(shop, data, 'update');
   },
 
-  // Customer webhooks
+ 
   'customers/create': async (shop, data) => {
     console.log(`👤 Customer created in ${shop}:`, data.id);
     await handleCustomerWebhook(shop, data, 'create');
@@ -35,7 +35,7 @@ export const webhookHandlers = {
     await handleCustomerWebhook(shop, data, 'update');
   },
 
-  // Product webhooks
+  
   'products/create': async (shop, data) => {
     console.log(`🛍️ Product created in ${shop}:`, data.id);
     await handleProductWebhook(shop, data, 'create');
@@ -47,7 +47,7 @@ export const webhookHandlers = {
   }
 };
 
-// Order webhook handler
+
 async function handleOrderWebhook(shop, orderData, action) {
   const client = await pool.connect();
   try {
@@ -57,7 +57,7 @@ async function handleOrderWebhook(shop, orderData, action) {
       return;
     }
 
-    // Get or create customer
+    
     let customerId = null;
     if (orderData.customer) {
       const customerRes = await client.query(
@@ -66,7 +66,7 @@ async function handleOrderWebhook(shop, orderData, action) {
       );
       
       if (customerRes.rows.length === 0) {
-        // Create customer if doesn't exist
+        
         const newCustomerRes = await client.query(
           'INSERT INTO customers (tenant_id, shopify_customer_id, email, first_name, last_name, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
           [
@@ -85,7 +85,7 @@ async function handleOrderWebhook(shop, orderData, action) {
       }
     }
 
-    // Handle order
+    
     if (action === 'create') {
       await client.query(
         'INSERT INTO orders (tenant_id, shopify_order_id, customer_id, total_price, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (tenant_id, shopify_order_id) DO NOTHING',
@@ -106,7 +106,7 @@ async function handleOrderWebhook(shop, orderData, action) {
   }
 }
 
-// Customer webhook handler
+
 async function handleCustomerWebhook(shop, customerData, action) {
   const client = await pool.connect();
   try {
@@ -144,7 +144,7 @@ async function handleCustomerWebhook(shop, customerData, action) {
   }
 }
 
-// Product webhook handler
+
 async function handleProductWebhook(shop, productData, action) {
   const client = await pool.connect();
   try {

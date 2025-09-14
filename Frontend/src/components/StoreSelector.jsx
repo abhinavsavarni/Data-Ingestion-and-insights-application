@@ -44,7 +44,7 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
     } catch (err) {
       console.error('Error fetching stores:', err);
       setError('Failed to load stores: ' + err.message);
-      setStores([]); // Set empty array on error
+      setStores([]); 
     } finally {
       setLoading(false);
     }
@@ -69,7 +69,7 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
   };
 
   const handleShopifyOAuth = (storeDomain) => {
-    // Get Firebase UID and pass it to OAuth flow
+    
     const auth = getAuth();
     const firebaseUid = auth.currentUser?.uid;
     
@@ -78,7 +78,7 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
       return;
     }
     
-    // Properly encode URL parameters to avoid spaces and special characters
+    
     const encodedShop = encodeURIComponent(storeDomain.trim());
     const encodedUid = encodeURIComponent(firebaseUid);
     const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
@@ -185,7 +185,7 @@ function StoreSelector({ onStoreSelect, selectedStore, token }) {
             placeholder="your-store.myshopify.com"
             value={newStoreDomain}
             onChange={(e) => {
-              // Remove extra spaces and normalize input
+              
               const value = e.target.value.replace(/\s+/g, '').toLowerCase();
               setNewStoreDomain(value);
             }}

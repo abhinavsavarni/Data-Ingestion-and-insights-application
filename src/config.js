@@ -24,7 +24,7 @@ const config = {
     nodeEnv: process.env.NODE_ENV || 'development'
   },
 
-  // CORS
+  
   cors: {
     origin: process.env.NODE_ENV === 'production' 
       ? [process.env.FRONTEND_URL, process.env.RAILWAY_PUBLIC_DOMAIN]

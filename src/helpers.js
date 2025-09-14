@@ -1,6 +1,6 @@
 import pool from './db.js';
 
-// Helper to get tenant id by shop domain
+
 export async function getTenantIdByShop(shop) {
   const client = await pool.connect();
   try {

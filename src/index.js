@@ -11,13 +11,13 @@ import admin from "./firebaseAdmin.js";
 import { webhookHandlers } from './webhookHandlers.js';
 import { webhookVerificationMiddleware } from './webhookVerification.js';
 import { getTenantIdByShop } from './helpers.js';
-import './setup.js'; // Run database setup
+import './setup.js'; 
 
 dotenv.config();
 
 const app = express();
 
-// Middleware
+
 app.use(express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }));
 app.use(express.raw({ type: 'application/json', verify: (req, res, buf) => { req.rawBody = buf; } }));
 
@@ -28,11 +28,11 @@ app.use(cors({
 })); 
 
 
-// Simple /api/shop endpoint
+
 app.get("/api/shop", async (req, res) => {
   const client = await pool.connect();
   try {
-    // For testing: return the first shop in tenants table
+    
     const result = await client.query("SELECT shopify_domain FROM tenants LIMIT 1");
 
     if (result.rows.length === 0) {
@@ -49,13 +49,13 @@ app.get("/api/shop", async (req, res) => {
 });
 
 
-// Metrics API for dashboard
+
 app.get('/api/metrics', async (req, res) => {
   const { shop, start, end } = req.query;
   const tenantId = await getTenantIdByShop(shop);
   if (!tenantId) return res.status(404).send('Tenant not found');
 
-  // Build optional date filter
+  
   const dateFilter = [];
   const params = [tenantId];
   if (start) {
@@ -70,24 +70,24 @@ app.get('/api/metrics', async (req, res) => {
 
   const client = await pool.connect();
   try {
-    // Total customers (all-time, not filtered)
+   
     const customersRes = await client.query('SELECT COUNT(*) FROM customers WHERE tenant_id = $1', [tenantId]);
 
-    // Total orders and revenue (date-filtered if provided)
+
     const ordersRes = await client.query(`
       SELECT COUNT(*) AS orders, COALESCE(SUM(total_price),0) AS revenue
       FROM orders
       WHERE ${whereOrders}
     `, params);
 
-    // Average order value (AOV)
+
     const aovRes = await client.query(`
       SELECT COALESCE(AVG(total_price),0) AS aov
       FROM orders
       WHERE ${whereOrders}
     `, params);
 
-    // Orders by date
+
     const ordersByDateRes = await client.query(`
       SELECT DATE(created_at) AS date, COUNT(*) AS orders
       FROM orders
@@ -96,7 +96,7 @@ app.get('/api/metrics', async (req, res) => {
       ORDER BY date
     `, params);
 
-    // Revenue trend by date
+
     const revenueTrendRes = await client.query(`
       SELECT DATE(created_at) AS date, COALESCE(SUM(total_price),0) AS revenue
       FROM orders
@@ -105,7 +105,7 @@ app.get('/api/metrics', async (req, res) => {
       ORDER BY date
     `, params);
 
-    // Top 5 customers by spend (date-filtered spend)
+
     const topCustomersRes = await client.query(`
       SELECT COALESCE(c.email, 'Guest') AS name, COALESCE(SUM(o.total_price),0) AS spend
       FROM customers c
@@ -117,7 +117,6 @@ app.get('/api/metrics', async (req, res) => {
       LIMIT 5
     `, [tenantId, ...params.slice(1)]);
 
-    // Repeat purchase rate (customers with 2+ orders / customers with >=1 order in range)
     const repeatRateRes = await client.query(`
       WITH orders_in_range AS (
         SELECT customer_id, COUNT(*) AS cnt
@@ -150,7 +149,7 @@ app.get('/api/metrics', async (req, res) => {
   }
 });
 
-// Endpoint to register webhooks for a shop
+
 app.post('/register-webhooks', async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).send('Missing shop');
@@ -162,7 +161,7 @@ app.post('/register-webhooks', async (req, res) => {
   }
 });
 import { handleWebhookEvent } from './webhooks.js';
-// Shopify webhook endpoints
+
 app.post('/webhook/customers', async (req, res) => {
   const shop = req.headers['x-shopify-shop-domain'];
   await handleWebhookEvent('customer', shop, req.body);
@@ -187,18 +186,18 @@ app.post('/webhook/carts', async (req, res) => {
   res.status(200).send('Cart webhook received');
 });
 
-// Shopify OAuth Step 1: Redirect to Shopify (with Firebase UID)
+
 app.get('/shopify/auth', (req, res) => {
   const { shop, firebase_uid } = req.query;
   if (!shop) return res.status(400).send('Missing shop parameter');
   if (!firebase_uid) return res.status(400).send('Missing firebase_uid parameter');
   
-  // Store firebase_uid in session or pass as state
+  
   const url = getShopifyAuthUrl(shop) + `&state=${firebase_uid}`;
   res.redirect(url);
 });
 
-// Shopify OAuth Step 2: Callback and token exchange
+
 app.get('/shopify/callback', async (req, res) => {
   const { shop, code, state } = req.query;
   console.log('OAuth callback received:', { shop, code: code ? 'present' : 'missing', state });
@@ -223,13 +222,13 @@ app.get('/shopify/callback', async (req, res) => {
     await linkStoreToUser(state, shop);
     console.log('User-store link created successfully');
     
-    // Register webhooks for real-time data sync
+    
     try {
       await registerWebhooks(shop);
       console.log(`✅ Webhooks registered for ${shop}`);
     } catch (webhookError) {
       console.error(`❌ Failed to register webhooks for ${shop}:`, webhookError);
-      // Don't fail the entire flow if webhooks fail
+      
     }
     
     res.send(`
@@ -263,7 +262,7 @@ app.get('/shopify/callback', async (req, res) => {
   }
 });
 
-// Ingest customers
+
 app.post('/ingest/customers', async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).send('Missing shop');
@@ -275,7 +274,6 @@ app.post('/ingest/customers', async (req, res) => {
   }
 });
 
-// Ingest products
 app.post('/ingest/products', async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).send('Missing shop');
@@ -287,7 +285,7 @@ app.post('/ingest/products', async (req, res) => {
   }
 });
 
-// Ingest orders
+
 app.post('/ingest/orders', async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).send('Missing shop');
@@ -299,7 +297,7 @@ app.post('/ingest/orders', async (req, res) => {
   }
 });
 
-// Ingest custom events
+
 app.post('/ingest/events', async (req, res) => {
   const { shop, eventType, payload } = req.body;
   if (!shop || !eventType || !payload) return res.status(400).send('Missing parameters');
@@ -311,7 +309,7 @@ app.post('/ingest/events', async (req, res) => {
   }
 });
 
-// Middleware to verify Firebase token
+
 async function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
@@ -319,7 +317,7 @@ async function verifyToken(req, res, next) {
   }
   const token = authHeader.split(" ")[1];
   
-  // Temporary bypass for testing - remove this in production
+
   if (token === "test-token") {
     req.user = { uid: "zZtJ29j0pferHhI1gjhAd6egVVg1" };
     return next();
@@ -327,7 +325,7 @@ async function verifyToken(req, res, next) {
   
   try {
     const decoded = await admin.auth().verifyIdToken(token);
-    req.user = decoded; // Firebase user info
+    req.user = decoded; 
     next();
   } catch (err) {
     console.error("Token verification failed:", err);
@@ -335,7 +333,7 @@ async function verifyToken(req, res, next) {
   }
 }
 
-// Get all stores for a user (multi-tenant)
+
 app.get("/api/stores", verifyToken, async (req, res) => {
   const client = await pool.connect();
   try {
@@ -356,13 +354,12 @@ app.get("/api/stores", verifyToken, async (req, res) => {
   }
 });
 
-// Get specific store for metrics (legacy compatibility)
 app.get("/api/shop", verifyToken, async (req, res) => {
   const { store_id } = req.query;
   const client = await pool.connect();
   try {
     if (store_id) {
-      // Get specific store by ID
+      
       const result = await client.query(`
         SELECT t.shopify_domain
         FROM user_stores us
@@ -376,7 +373,7 @@ app.get("/api/shop", verifyToken, async (req, res) => {
 
       res.json({ shop: result.rows[0].shopify_domain });
     } else {
-      // Get first store (legacy behavior)
+     
       const result = await client.query(`
         SELECT t.shopify_domain
         FROM user_stores us
@@ -400,14 +397,14 @@ app.get("/api/shop", verifyToken, async (req, res) => {
   }
 });
 
-// Check store status and access token
+
 app.get("/api/store-status", verifyToken, async (req, res) => {
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
   
   const client = await pool.connect();
   try {
-    // First check if store exists in tenants table at all
+    
     const tenantCheck = await client.query(
       'SELECT id, name, shopify_domain, shopify_access_token, created_at FROM tenants WHERE shopify_domain = $1',
       [shop]
@@ -423,7 +420,7 @@ app.get("/api/store-status", verifyToken, async (req, res) => {
     
     const tenant = tenantCheck.rows[0];
     
-    // Check if user has access to this store
+    
     const accessCheck = await client.query(`
       SELECT us.created_at as linked_at
       FROM user_stores us
@@ -453,7 +450,7 @@ app.get("/api/store-status", verifyToken, async (req, res) => {
   }
 });
 
-// Connect a new store
+
 app.post("/api/connect-store", verifyToken, async (req, res) => {
   const { shop } = req.body;
   console.log('Connect store request:', { shop, userId: req.user.uid });
@@ -464,7 +461,7 @@ app.post("/api/connect-store", verifyToken, async (req, res) => {
   }
   
   try {
-    // Check if store already exists
+   
     const client = await pool.connect();
     try {
       console.log('Checking if store exists in tenants table:', shop);
@@ -482,7 +479,7 @@ app.post("/api/connect-store", verifyToken, async (req, res) => {
       }
       
       console.log('Store found, linking to user:', req.user.uid);
-      // Link user to existing store
+      
       await linkStoreToUser(req.user.uid, shop);
       console.log('Store connected successfully to user');
       
@@ -499,7 +496,7 @@ app.post("/api/connect-store", verifyToken, async (req, res) => {
   }
 });
 
-// Link existing store to current user
+
 app.post("/api/link-store", verifyToken, async (req, res) => {
   const { shop } = req.body;
   console.log('Link store request:', { shop, userId: req.user.uid });
@@ -511,7 +508,7 @@ app.post("/api/link-store", verifyToken, async (req, res) => {
   try {
     const client = await pool.connect();
     try {
-      // Check if store exists
+      
       const storeCheck = await client.query(
         "SELECT id FROM tenants WHERE shopify_domain = $1",
         [shop]
@@ -523,7 +520,7 @@ app.post("/api/link-store", verifyToken, async (req, res) => {
         });
       }
       
-      // Link user to store
+      
       await linkStoreToUser(req.user.uid, shop);
       
       res.json({ message: "Store linked to your account successfully" });
@@ -540,7 +537,7 @@ app.post("/api/link-store", verifyToken, async (req, res) => {
 });
 
 
-// Webhook endpoints
+
 app.post('/webhooks/orders/create', webhookVerificationMiddleware, (req, res) => {
   const shop = req.headers['x-shopify-shop-domain'];
   webhookHandlers['orders/create'](shop, req.body);
@@ -589,7 +586,7 @@ app.post('/webhooks/products/update', webhookVerificationMiddleware, (req, res) 
   res.status(200).send('OK');
 });
 
-// Webhook management endpoints
+
 app.post('/api/register-webhooks', async (req, res) => {
   const { shop } = req.body;
   if (!shop) return res.status(400).json({ error: 'Missing shop' });
@@ -616,7 +613,7 @@ app.post('/api/unregister-webhooks', async (req, res) => {
   }
 });
 
-// Simple test endpoint - only for API testing
+
 app.get('/api/status', (req, res) => {
   res.json({ 
     message: 'Shopify Data Ingestion App is running!', 
@@ -625,10 +622,10 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// Health check endpoint
+
 app.get('/health', async (req, res) => {
   try {
-    // Test database connection
+    
     const client = await pool.connect();
     await client.query('SELECT 1');
     client.release();
@@ -650,17 +647,17 @@ app.get('/health', async (req, res) => {
   }
 });
 
-// IMPORTANT: Static file serving and frontend routes MUST be last
+
 if (config.server.nodeEnv === 'production') {
-  // Serve static files
+  
   app.use(express.static('dist'));
   
-  // Catch-all handler: send back React's index.html file for any non-API routes
+  
   app.get('*', (req, res) => {
     res.sendFile('dist/index.html', { root: '.' });
   });
 } else {
-  // Development mode - serve a simple message for root
+  
   app.get('/', (req, res) => {
     res.json({ 
       message: 'Shopify Data Ingestion App - Development Mode', 

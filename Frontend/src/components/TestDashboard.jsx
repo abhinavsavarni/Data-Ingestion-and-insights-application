@@ -26,7 +26,7 @@ function TestDashboard({ user, token }) {
   const [error, setError] = useState('');
   const [storeStatus, setStoreStatus] = useState(null);
 
-  // Helper function to generate proper OAuth URL
+  
   const generateOAuthUrl = (shop) => {
     const auth = getAuth();
     const firebaseUid = auth.currentUser?.uid;
@@ -35,7 +35,6 @@ function TestDashboard({ user, token }) {
       return null;
     }
     
-    // Clean and encode URL parameters to avoid protocol violations
     const cleanShopDomain = shop.trim().replace(/\s+/g, '');
     const encodedShop = encodeURIComponent(cleanShopDomain);
     const encodedUid = encodeURIComponent(firebaseUid);
@@ -65,7 +64,7 @@ function TestDashboard({ user, token }) {
     setError('');
     
     try {
-      // Check if store exists and has access token
+     
       const response = await axios.get(
         `${import.meta.env.VITE_BACKEND_URL}/api/store-status?shop=${shopDomain}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -158,7 +157,7 @@ function TestDashboard({ user, token }) {
             placeholder="your-store.myshopify.com"
             value={shopDomain}
             onChange={(e) => {
-              // Remove extra spaces and normalize input
+              
               const value = e.target.value.replace(/\s+/g, '').toLowerCase();
               setShopDomain(value);
             }}
@@ -197,7 +196,7 @@ function TestDashboard({ user, token }) {
                             setError('User not authenticated. Please refresh and try again.');
                             return;
                           }
-                          // Properly encode URL parameters to avoid spaces
+                          
                           const encodedShop = encodeURIComponent(shopDomain.trim());
                           const encodedUid = encodeURIComponent(firebaseUid);
                           const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
@@ -241,7 +240,7 @@ function TestDashboard({ user, token }) {
                             setError('User not authenticated. Please refresh and try again.');
                             return;
                           }
-                          // Properly encode URL parameters to avoid spaces
+                          
                           const encodedShop = encodeURIComponent(shopDomain.trim());
                           const encodedUid = encodeURIComponent(firebaseUid);
                           const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${encodedShop}&firebase_uid=${encodedUid}`;
