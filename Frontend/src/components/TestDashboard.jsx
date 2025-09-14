@@ -416,21 +416,7 @@ function TestDashboard({ user, token }) {
         </CardContent>
       </Card>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Setup Complete!
-          </Typography>
-          <Typography variant="body2" paragraph>
-            ✅ **For existing stores:** Use "Register Webhooks" button above<br/>
-            ✅ **For new stores:** Webhooks auto-register during OAuth connection<br/>
-            ✅ **Manual data pull:** Use the ingestion buttons to get historical data
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            After webhook registration, your app will receive real-time updates when customers, orders, or products change in your Shopify store.
-          </Typography>
-        </CardContent>
-      </Card>
+
     </Box>
   );
 }
