@@ -5,8 +5,25 @@ import pool from './db.js';
 export async function getAccessToken(shop) {
   const client = await pool.connect();
   try {
-    const res = await client.query('SELECT shopify_access_token FROM tenants WHERE shopify_domain = $1', [shop]);
-    return res.rows[0]?.shopify_access_token;
+    console.log(`🔍 Looking up access token for ingestion: ${shop}`);
+    const res = await client.query('SELECT shopify_access_token, name FROM tenants WHERE shopify_domain = $1', [shop]);
+    
+    if (res.rows.length === 0) {
+      console.error(`❌ No tenant found for ingestion: ${shop}`);
+      throw new Error(`No tenant found for shop: ${shop}. Please connect this store via OAuth first.`);
+    }
+    
+    const accessToken = res.rows[0]?.shopify_access_token;
+    const tenantName = res.rows[0]?.name;
+    
+    console.log(`📋 Tenant for ingestion: ${tenantName}, Access token: ${accessToken ? 'Present' : 'Missing'}`);
+    
+    if (!accessToken) {
+      console.error(`❌ No access token for ingestion: ${shop}`);
+      throw new Error(`No access token found for shop: ${shop}. Please reconnect this store via OAuth.`);
+    }
+    
+    return accessToken;
   } finally {
     client.release();
   }

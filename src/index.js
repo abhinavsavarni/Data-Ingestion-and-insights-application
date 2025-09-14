@@ -400,6 +400,43 @@ app.get("/api/shop", verifyToken, async (req, res) => {
   }
 });
 
+// Check store status and access token
+app.get("/api/store-status", verifyToken, async (req, res) => {
+  const { shop } = req.query;
+  if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
+  
+  const client = await pool.connect();
+  try {
+    // Check if user has access to this store
+    const accessCheck = await client.query(`
+      SELECT t.id, t.name, t.shopify_domain, t.shopify_access_token, t.created_at
+      FROM user_stores us
+      JOIN tenants t ON us.tenant_id = t.id
+      WHERE us.firebase_uid = $1 AND t.shopify_domain = $2
+    `, [req.user.uid, shop]);
+    
+    if (accessCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Store not found or access denied" });
+    }
+    
+    const store = accessCheck.rows[0];
+    
+    res.json({
+      id: store.id,
+      name: store.name,
+      shopify_domain: store.shopify_domain,
+      has_access_token: !!store.shopify_access_token,
+      access_token_length: store.shopify_access_token ? store.shopify_access_token.length : 0,
+      created_at: store.created_at
+    });
+  } catch (err) {
+    console.error("Error checking store status:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+});
+
 // Connect a new store
 app.post("/api/connect-store", verifyToken, async (req, res) => {
   const { shop } = req.body;

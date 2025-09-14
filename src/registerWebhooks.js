@@ -57,14 +57,25 @@ export async function registerWebhooks(shop) {
   const client = await pool.connect();
   let accessToken;
   try {
-    const res = await client.query('SELECT shopify_access_token FROM tenants WHERE shopify_domain = $1', [shop]);
+    console.log(`🔍 Looking up access token for shop: ${shop}`);
+    const res = await client.query('SELECT shopify_access_token, name FROM tenants WHERE shopify_domain = $1', [shop]);
+    
+    if (res.rows.length === 0) {
+      console.error(`❌ No tenant found for shop: ${shop}`);
+      throw new Error(`No tenant found for shop: ${shop}. Please connect this store via OAuth first.`);
+    }
+    
     accessToken = res.rows[0]?.shopify_access_token;
+    const tenantName = res.rows[0]?.name;
+    
+    console.log(`📋 Tenant found: ${tenantName}, Access token: ${accessToken ? 'Present' : 'Missing'}`);
+    
+    if (!accessToken) {
+      console.error(`❌ No access token for shop: ${shop}`);
+      throw new Error(`No access token found for shop: ${shop}. Please reconnect this store via OAuth.`);
+    }
   } finally {
     client.release();
-  }
-  
-  if (!accessToken) {
-    throw new Error(`No access token found for shop: ${shop}`);
   }
 
   console.log(`🔗 Registering webhooks for ${shop}...`);

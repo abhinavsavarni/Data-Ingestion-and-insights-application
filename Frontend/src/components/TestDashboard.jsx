@@ -17,12 +17,39 @@ import {
   ShoppingCart as ShoppingCartIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import { getAuth } from 'firebase/auth';
 
 function TestDashboard({ user, token }) {
   const [loading, setLoading] = useState({});
   const [results, setResults] = useState({});
   const [shopDomain, setShopDomain] = useState('');
   const [error, setError] = useState('');
+  const [storeStatus, setStoreStatus] = useState(null);
+
+  const checkStoreStatus = async () => {
+    if (!shopDomain) {
+      setError('Please enter a shop domain');
+      return;
+    }
+
+    setLoading({ ...loading, status: true });
+    setError('');
+    
+    try {
+      // Check if store exists and has access token
+      const response = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/store-status?shop=${shopDomain}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setStoreStatus(response.data);
+    } catch (err) {
+      console.error('Error checking store status:', err);
+      setStoreStatus({ error: err.response?.data?.error || err.message });
+    } finally {
+      setLoading({ ...loading, status: false });
+    }
+  };
 
   const handleWebhookAction = async (action) => {
     if (!shopDomain) {
@@ -94,7 +121,7 @@ function TestDashboard({ user, token }) {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Shop Configuration
+            Shop Configuration & Status
           </Typography>
           <TextField
             fullWidth
@@ -105,6 +132,55 @@ function TestDashboard({ user, token }) {
             sx={{ mb: 2 }}
             helperText="Enter the Shopify domain of a connected store"
           />
+          
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={checkStoreStatus}
+              disabled={loading.status}
+            >
+              {loading.status ? 'Checking...' : 'Check Store Status'}
+            </Button>
+          </Box>
+          
+          {storeStatus && (
+            <Alert 
+              severity={storeStatus.error ? 'error' : 'success'} 
+              sx={{ mb: 2 }}
+            >
+              {storeStatus.error ? (
+                <div>
+                  <strong>Error:</strong> {storeStatus.error}
+                </div>
+              ) : (
+                <div>
+                  <strong>✅ Store Found:</strong> {storeStatus.name}<br/>
+                  <strong>Domain:</strong> {storeStatus.shopify_domain}<br/>
+                  <strong>Access Token:</strong> {storeStatus.has_access_token ? '✅ Present' : '❌ Missing'}<br/>
+                  <strong>Connected:</strong> {new Date(storeStatus.created_at).toLocaleDateString()}
+                  
+                  {!storeStatus.has_access_token && (
+                    <Box sx={{ mt: 2 }}>
+                      <Alert severity="warning" sx={{ mb: 1 }}>
+                        ⚠️ This store is missing an access token. You need to reconnect it.
+                      </Alert>
+                      <Button 
+                        variant="contained" 
+                        color="primary"
+                        onClick={() => {
+                          const oauthUrl = `${import.meta.env.VITE_BACKEND_URL}/shopify/auth?shop=${shopDomain}&firebase_uid=${user?.uid}`;
+                          window.open(oauthUrl, '_blank', 'width=600,height=600');
+                        }}
+                      >
+                        Reconnect Store
+                      </Button>
+                    </Box>
+                  )}
+                </div>
+              )}
+            </Alert>
+          )}
+          
           <Typography variant="body2" color="text.secondary">
             User: {user ? user.email : 'No user'} | Token: {token ? 'Present' : 'Missing'}
           </Typography>
